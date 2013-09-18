@@ -1,6 +1,0 @@
-c:\users\jonathan\documents\visual studio 2012\Projects\Euler8\Euler8\bin\Debug\Euler8.exe.config
-c:\users\jonathan\documents\visual studio 2012\Projects\Euler8\Euler8\bin\Debug\Euler8.exe
-c:\users\jonathan\documents\visual studio 2012\Projects\Euler8\Euler8\bin\Debug\Euler8.pdb
-c:\users\jonathan\documents\visual studio 2012\Projects\Euler8\Euler8\obj\Debug\Euler8.csprojResolveAssemblyReference.cache
-c:\users\jonathan\documents\visual studio 2012\Projects\Euler8\Euler8\obj\Debug\Euler8.exe
-c:\users\jonathan\documents\visual studio 2012\Projects\Euler8\Euler8\obj\Debug\Euler8.pdb

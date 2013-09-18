@@ -1,6 +1,0 @@
-c:\users\jonathan\documents\visual studio 2012\Projects\Euler11\Euler11\bin\Debug\Euler11.exe.config
-c:\users\jonathan\documents\visual studio 2012\Projects\Euler11\Euler11\obj\Debug\Euler11.csprojResolveAssemblyReference.cache
-c:\users\jonathan\documents\visual studio 2012\Projects\Euler11\Euler11\bin\Debug\Euler11.exe
-c:\users\jonathan\documents\visual studio 2012\Projects\Euler11\Euler11\bin\Debug\Euler11.pdb
-c:\users\jonathan\documents\visual studio 2012\Projects\Euler11\Euler11\obj\Debug\Euler11.exe
-c:\users\jonathan\documents\visual studio 2012\Projects\Euler11\Euler11\obj\Debug\Euler11.pdb
