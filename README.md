@@ -10,7 +10,16 @@ will get prettier when I'm more experienced.
 
 Just a little explanation of my current Directories:
 
-<h1>Project Euler Solutions:</h1>
+<h2>Aseembly Language Homework Programs</h2>
+
+These are my solutions to all the IBM assembly programs I had to write in my assembler class,
+some of the most and least fun I have while programming, but I suppose thats to be expected when
+programming in a language older than me.
+
+This one probably won't be updated again, as I currently have no plans to take another course 
+similair to this one.
+
+<h2>Project Euler Solutions:</h2>
 
 I'm putting these up for two reasons,to act as code samples for interviews and prospective
 employeers, and to back up my little victories in the case of some sort of hard drive failure.
