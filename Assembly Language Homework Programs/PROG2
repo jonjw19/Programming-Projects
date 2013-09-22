@@ -1,0 +1,104 @@
+**********************************************************************  00010000
+*      NAME: PROG2                                                      00010101
+*                                                                       00010201
+*      FUNCTION: DISPLAY GROSS PAY, BONUSES, DEDUCTIONS AND             00010301
+*                NETPAY FOR EACH EMPLOYEE AND THEN DISPLAY              00010401
+*                OVERALL NETPAY AND # OF EMPLOYEES                      00010501
+*                                                                       00010601
+*      INPUT:    EMPLOYEE GROSS PAY, BONUS, DEDUCTIONS                  00010701
+*                                                                       00010801
+*      OUTPUT:   FORMATTED VERSION OF INPUT, ADDITIONALLY               00010901
+*                # OF EMPLOYEES, NETPAY FOR EACH EMPLOYEE               00011001
+*                AND OVERALL NETPAY FOR ALL EMPLOYEES                   00011101
+*      ENTRY CONDS: USING PROG2                                         00011210
+*                                                                       00011301
+*      REGISTER USAGE: R1: USED FOR XREAD                               00011401
+*                      R4: USED FOR GROSS PAY                           00011501
+*                      R5: USED FOR BONUS                               00011601
+*                      R6: USED FOR DEDUCTIONS                          00011701
+*                      R7: USED FOR NETPAY                              00011801
+*                      R8: USED FOR # OF EMPLOYEES                      00011901
+*                      R9: USED FOR OVERALL NETPAY                      00012001
+*                      R14: USED TO EXIT TO OS                          00012101
+*                      R15: USED AS BASE REGISTER                       00012201
+*                                                                       00012301
+*      EXIT CONDS:     BR 14                                            00012410
+*                                                                       00012501
+*      NOTES:                                                           00012601
+*                                                                       00012701
+**********************************************************************  00013001
+* JCL                                                                   00020000
+**********************************************************************  00030000
+//KC03FEDF JOB ,'JONATHAN WILSON',MSGCLASS=H                            00040000
+//STEP1 EXEC PGM=ASSIST                                                 00050000
+//STEPLIB DD DSN=KC02293.ASSIST.LOADLIB,DISP=SHR                        00060000
+//SYSPRINT DD SYSOUT=*                                                  00070000
+//SYSIN DD *                                                            00080000
+**********************************************************************  00090000
+         TITLE 'JONATHAN WILSON, CSCI360-2, PROGRAM 2'                  00091013
+PROG2    CSECT                                                          00100000
+         USING PROG2,15                                                 00110000
+*                                                                       00120000
+         L     8,=F'0'         INITILIZE # OF EMPLOYEES                 00121001
+         L     9,=F'0'         INITILIZE OVERALL NET-PAY                00122001
+         XPRNT HEADING,28      PRINT HEADER FOR OUTPUT                  00130001
+         XPRNT NEWLINE,20      PRINT BLANK LINE                         00130102
+         XPRNT TABHEAD,68                                               00130211
+         XREAD CARD,80         CREATE INPUT CARD TO BE READ             00130301
+SLOOP    BC    B'0100',ELOOP   LOOP UNTIL END OF FILE                   00130403
+         SR    7,7             CLEAR LAST NET-PAY                       00130501
+         A     8,=F'1'         INCREMENT # OF EMPLOYEES                 00130601
+         XDECI 4,CARD          EXTRACT AND STORE GROSS PAY              00130701
+         XDECI 5,0(0,1)        EXTRACT AND STORE BONUS                  00130801
+         XDECI 6,0(0,1)        EXTRACT AND STORE DEDUCTIONS             00130901
+         AR    7,4             ADD GROSS PAY                            00131001
+         AR    7,5             ADD BONUS                                00131101
+         SR    7,6             SUBTRACT DEDUCTION                       00131201
+         AR    9,7             INCREMENT OVERALL NET PAY                00131304
+         XDECO 8,NOEMP         CONVERT REGISTER 8 TO PRINTABLE          00131401
+         XDECO 4,GROSS         CONVERT REGISTER 4 TO PRINTABLE          00131501
+         XDECO 5,BONUS         CONVERT REGISTER 5 TO PRINTABLE          00131601
+         XDECO 6,DEDUC         CONVERT REGISTER 6 TO PRINTABLE          00131701
+         XDECO 7,NETPAY        CONVERT REGISTER 7 TO PRINTABLE          00131801
+         XPRNT PRNTLN,70       PRINT OUTPUT TABLE LINE                  00131901
+         XREAD CARD,80         READ NEXT LINE ON CARD                   00132101
+         BC    B'1111',SLOOP   RETURN TO SLOOP (TOP OF LOOP)            00132201
+ELOOP    XDECO 8,EMPTOT        CONVERT REGISTER 8 TO PRINTABLE          00132303
+         XDECO 9,PAYTOT        CONVERT REGISTER 9 TO PRINTABLE          00132401
+         XPRNT NUMLAB,40       PRINT TOTAL NUMBER OF EMPLOYEES          00132506
+         XPRNT NEWLINE,20      PRINT BLANK LINE                         00132602
+         XPRNT PAYLAB,40       PRINT OUT TOTAL OVERALL PAY              00132706
+         XPRNT NEWLINE,20      PRINT BLANK LINE                         00132802
+QUIT     BR    14          RETURN CONTROL TO OPERATING SYSTEM           00133001
+*************************************************************           00134002
+         LTORG                                                          00135003
+*************************************************************           00136002
+CARD     DS    80C         INITIALIZE INPUT CARD                        00140001
+HEADING  DC    C'1'                      INITIALIZE HEADING             00150008
+         DC    C' EMPLOYEE INFORMATION'                                 00150108
+         DC    20C' '      SECURE SAVED SPACE BUFFER                    00150201
+TABHEAD  DC    C'    EMPLOYEE #     GROSS PAY       BONUS   DEDUCTIONS' 00150308
+         DC    C'      NET PAY'    INITIALIZE TABLE HEADING             00150401
+         DC    10C' '      SECURE SAVED SPACE BUFFER                    00150508
+PRNTLN   DC    C' '        SINGLE SPACED OUTPUT                         00150601
+NOEMP    DS    2C          SAVED SPACE FOR EMPLOYEE #                   00150701
+         DC    12C' '      FORMATTING OUTPUT                            00150801
+GROSS    DS    5C          SAVED SPACE FOR GROSS PAY                    00150901
+         DC    8C' '       FORMATTING OUTPUT                            00151001
+BONUS    DS    4C          SAVED SPACE FOR BONUS                        00151101
+         DC    8C' '       FORMATTING OUTPUT                            00151201
+DEDUC    DS    3C          SAVED SPACE FOR DEDUCTIONS                   00151301
+         DC    10C' '      FORMATTING OUTPUT                            00151401
+NETPAY   DS    5C          SAVED SPACE FOR NETPAY                       00151501
+         DC    20C' '      SECURING SAFTEY BUFFER FOR SPACING           00151601
+NUMLAB   DC    C' NUMBER OF EMPLOYEES:' LABEL FOR NO OF EMPLOYEES       00151701
+EMPTOT   DS    12C         SAVED SPACE FOR TOTAL EMPLOYEES              00151909
+         DC    20C' '      SECURE SAVED SPACE BUFFER                    00152001
+PAYLAB   DC    C' OVERALL NET PAY:'  LABEL FOR OVERALL NETPAY           00152101
+PAYTOT   DS    12C         SAVED SPACE FOR OVERALL NETPAY               00152309
+         DC    20C' '      SECURE SAVED SPACE BUFFER                    00152402
+NEWLINE  DC    25C' '                                                   00152502
+         END   PROG2                                                    00153001
+/*                                                                      00160000
+//FT05F001 DD DSN=KC02330.CSCI360.FILES(DATA2),DISP=SHR                 00170000
+//                                                                      00180000

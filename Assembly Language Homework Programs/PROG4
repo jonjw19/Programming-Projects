@@ -1,0 +1,142 @@
+**********************************************************************  00010000
+*  AUTHOR: JONATHAN WILSON                                              00020005
+*                                                                       00030000
+*  NAME: PROG4                                                          00040005
+*                                                                       00050000
+*  FUNCTION: PLACE INPUT IN TABLE, DISPLAY FOUR NUMBERS TO A LINE       00060005
+*            THEN DISPLAY EVERY THIRD NUMBER IN THE SAME FASHION        00070005
+*                                                                       00080000
+*  INPUT:   INPUT TO BE STORED IN TABLE                                 00090005
+*                                                                       00100000
+*  OUTPUT:  FORMATTED CONTENTS OF TABLE                                 00110005
+*                                                                       00120000
+*  ENTRY CONDS: USING PROG4                                             00130005
+*                                                                       00140000
+*  REGISTER USAGE: R1: USED BY XDECI                                    00150005
+*                  R2: USED TO MULTIPLY/DIVIDE                          00150114
+*                  R3: USED TO CONTROL INPUT                            00151005
+*                  R5: USED TO STORE TABLE                              00152005
+*                  R9: USED FOR COUNTER                                 00152114
+*                  R10: USED FOR CALCULATION                            00152214
+*                  R14: USED TO EXIT                                    00152314
+*                  R15: USED FOR PROG4                                  00152414
+*                                                                       00152505
+*  EXIT CONDS:     BR 14                                                00153005
+*********************************************************************** 00160000
+//KC03FEDF JOB ,'JONATHAN WILSON',MSGCLASS=H                            00170000
+//STEP1 EXEC PGM=ASSIST                                                 00180000
+//STEPLIB DD DSN=KC02293.ASSIST.LOADLIB,DISP=SHR                        00190000
+//SYSPRINT DD SYSOUT=*                                                  00200000
+//SYSIN DD *                                                            00210000
+*********************************************************************** 00211000
+* PROGRAM 4                                                             00212000
+*********************************************************************** 00213000
+         TITLE 'JONATHAN WILSON, CSCI360-2, PROGRAM 4'                  00213104
+PROG4    CSECT                                                          00214000
+         USING PROG4,15                                                 00215000
+         LA    5,TABLE         LOAD TABLE INTO REGISTER 5               00215103
+TLOOP1   XREAD CARD,80         READ INPUT                               00215218
+         BC    B'0100',ELOOP1  IF EOF, END LOOP                         00215318
+         C     5,=A(ENDTABLE)  IF END OF TABLE                          00215404
+         BC    B'1010',ELOOP1  END LOOP                                 00215503
+         XDECI 3,CARD          CONVERT INPUT INTO WORKABLE DATA         00215621
+         ST    3,0(0,5)        STORE INPUT INTO TABLE                   00215703
+         LA    5,4(0,5)        LOAD ADDRESS OF NEXT TABLE LOCATION      00215803
+DECILP   XDECI 3,0(0,1)                                                 00215921
+         ST    3,0(0,5)                                                 00216020
+         LA    5,4(0,5)                                                 00216120
+         BC    B'0001',TLOOP1  BRANCH TO NEW CARD                       00216218
+         B     DECILP          BRANCH TO TOP OF DECI LOOP               00216318
+ELOOP1   DS    0H              END OF LOOP                              00216403
+*                                                                       00216503
+         ST    5,EOT           STORE FIRST OPEN TABLE SLOT              00216612
+*                                                                       00216706
+         LA    5,TABLE            LOAD ADDRESS OF TABLE INTO REG 5      00216812
+         XPRNT ALLHEAD,18         PRINT HEADER                          00216914
+TLOOP2   C     5,EOT              CHECKS FOR END OF TABLE               00217012
+         BC    B'1010',ELOOP2     END LOOP AT EOT                       00217112
+         L     3,0(0,5)           LOAD 1ST NUMBER INTO REG 3            00217212
+         XDECO 3,PLINE1           MAKE 1ST NUMBER PRINTABLE             00217312
+         L     3,4(0,5)           LOAD 2ND NUMBER INTO REG 3            00217412
+         XDECO 3,PLINE2           MAKE 2ND NUMBER PRINTABLE             00217512
+         L     3,8(0,5)           LOAD 3RD NUMBER INTO REG 3            00217612
+         XDECO 3,PLINE3           MAKE 3RD NUMBER PRINTABLE             00217712
+         L     3,12(0,5)          LOAD 4TH NUMBER INTO REG 3            00217812
+         XDECO 3,PLINE4           MAKE 4TH NUMBER PRINTABLE             00217912
+         XPRNT PLINE,49           PRINT PRINTLINE                       00218012
+         LA    5,16(0,5)          LOAD ADDRESS OF NEXT SET              00218112
+         B     TLOOP2             BRANCH TO TOP OF LOOP                 00218212
+ELOOP2   DS    0H                 END OF LOOP                           00218312
+*                                                                       00218412
+         XPRNT BLANK,25           PRINT BLANK LINE                      00218512
+         XPRNT BLANK,25           PRINT BLANK LINE                      00218612
+         LA    5,TABLE            LOAD TABLE ADDRESS INTO REG 5         00218712
+*                                                                       00218812
+         XPRNT THRHEAD,29         PRINT HEADER                          00218914
+         L     9,=F'1'            INITIALIZE COUNTER                    00219012
+THRCHK   C     5,EOT              CHECK IF END OF TABLE                 00219112
+         BC    B'1010',ENDCHK     BRANCH TO END OF LOOPSET              00219212
+         SR    10,10              CLEAR REGISTER 10                     00219312
+         L     3,0(0,5)           LOAD NUMBER TO REGISTER 3             00219412
+         AR    10,3               COPY NUMBER INTO REGISTER 10          00219512
+         M     2,ONE              MULTIPLY NUMBER BY 1                  00219612
+         D     2,THREE            DIVIDE NUMBER BY 3                    00219712
+         C     2,ZERO             COMPARE REMAINDER TO ZERO             00219812
+         BC    B'1000',DIVIS      SEND DIVISBLE NUMBER TO PRINT LOOP    00219913
+         LA    5,4(0,5)           MOVE TO NEXT ADDRESS IN TABLE         00220012
+         B     THRCHK             RETURN TO CHECKING LOOP               00220112
+*                                                                       00220212
+DIVIS    C     9,THREE            COMPARE COUNTER TO 3                  00220312
+         BC    B'0100',LESSHALF   CHECK IF LESS THEN 3                  00220412
+         BC    B'0010',FOURTH     CHECK IF THIRD OR FOURTH NUMBER       00220512
+THIRD    XDECO 10,PLINE3          MAKE THIRD NUMBER PRINTABLE           00220612
+         A     9,=F'1'         ADD 1 TO COUNTER                         00220712
+         LA    5,4(0,5)        MOVE TO NEXT ADDRESS                     00220812
+         B     THRCHK          RETURN TO CHECKING LOOP                  00220912
+FOURTH   XDECO 10,PLINE4       MAKE FOURTH NUMBER PRINTABLE             00221012
+         S     9,=F'3'         RESET COUNTER TO 1                       00221112
+         XPRNT PLINE,49        PRINT PRINTLINE                          00221212
+         LA    5,4(0,5)        MOVE TO NEXT ADDRESS                     00221312
+         B     THRCHK          RETURN TO CHECKING LOOP                  00221412
+LESSHALF C     9,ONE           COMPARE COUNTER TO 1                     00221512
+         BC    B'0010',SECOND  CHECK IF FIRST OR SECOND NUMBER          00221612
+FIRST    XDECO 10,PLINE1       MAKE FIRST NUMBER PRINTABLE              00221712
+         A     9,=F'1'         ADD 1 TO COUNTER                         00221812
+         LA    5,4(0,5)        MOVE TO NEXT ADDRESS                     00221912
+         B     THRCHK          RETURN TO CHECKING LOOP                  00222012
+SECOND   XDECO 10,PLINE2       MAKE SECOND NUMBER PRINTABLE             00222112
+         A     9,=F'1'         ADD 1 TO COUNTER                         00222212
+         LA    5,4(0,5)        MOVE TO NEXT ADDRESS                     00222313
+         B     THRCHK          RETURN TO CHECKING LOOP                  00222412
+ENDCHK   DS    0H              END PRINT LOOP                           00222512
+*                                                                       00222612
+QUIT     BR    14              GIVE CONTROL TO OS                       00222703
+*********************************************************************** 00222801
+         LTORG                                                          00222901
+*********************************************************************** 00223001
+TABLE    DC    60F'-1'                                                  00223103
+ENDTABLE DS    0H                                                       00223203
+EOT      DC    A(TABLE)                                                 00223303
+*                                                                       00223403
+CARD     DS    80C                                                      00223503
+HASHTAG  DC    C'#'                                                     00223603
+*                                                                       00223703
+PLINE    DC    C' '                                                     00223806
+PLINE1   DS    12C                                                      00223906
+PLINE2   DS    12C                                                      00224006
+PLINE3   DS    12C                                                      00224106
+PLINE4   DS    12C                                                      00224206
+BLANK    DC    40C' '                                                   00224312
+ZERO     DC    F'0'                                                     00224412
+ONE      DC    F'1'                                                     00224512
+THREE    DC    F'3'                                                     00224612
+*                                                                       00224703
+ALLHEAD  DC    C' '                                                     00224814
+         DC    CL17'THE NUMBERS - ALL'                                  00224914
+THRHEAD  DC    C' '                                                     00225014
+         DC    CL28'THE NUMBERS - MULTIPLES OF 3'                       00225117
+*                                                                       00225216
+         END   PROG4                                                    00225300
+/*                                                                      00226000
+//FT05F001 DD DSN=KC02330.CSCI360.FILES(DATA4),DISP=SHR                 00230000
+//                                                                      00240000

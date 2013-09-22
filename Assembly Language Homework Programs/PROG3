@@ -1,0 +1,216 @@
+//KC03FEDF JOB ,'JONATHAN WILSON',MSGCLASS=H                            00010000
+//STEP1 EXEC PGM=ASSIST                                                 00020000
+//STEPLIB DD DSN=KC02293.ASSIST.LOADLIB,DISP=SHR                        00030000
+//SYSPRINT DD SYSOUT=*                                                  00040000
+//SYSIN DD *                                                            00050000
+***********************************************************             00060000
+* NAME: PROG3                                                           00070007
+*                                                                       00080000
+* FUNCTION: PROG3 RECEIVES INPUT DATA AND FORMATS AND OUTPUTS           00081007
+*           THAT DATA AS WELL AS TOTALS FOR MOVIES AND GAMES            00082007
+*           OWNED AND THE PERCENTAGE OF MOVIES AND GAMES BEING          00083007
+*           RENTED                                                      00084007
+*                                                                       00085001
+* INPUT: CARD                                                           00086007
+*                                                                       00087001
+*  OUTPUT: FORMATTED VERSION OF INPUT, TOTALS OF MOVIES AND GAMES       00088007
+*          AND PERCENTAGE OF MOVIES AND GAMES RENTED                    00089007
+*                                                                       00089101
+*  REGISTER USE: R1: USED FOR XREAD                                     00089207
+*                R2: STORES SERIAL NUMBER                               00089307
+*                R3: STORES # IN STOCK                                  00089407
+*                R4: STORES # RENTED                                    00089507
+*                R5: STORES STATUS NUMBER                               00089608
+*                R6: USED FOR CALCULATION                               00089707
+*                R7: USED TO HOLD TOTAL OWNED                           00089807
+*                    AND FOR CALCULATION                                00089907
+*                R8: USED FOR TOTAL RENTED MOVIES                       00090007
+*                R9: USED FOR TOTAL RENTED GAMES                        00090107
+*                R10:USED FOR TOTAL OWNED MOVIES                        00090207
+*                R11:USED FOR TOTAL OWNED GAMES                         00090307
+*                R12:USED TO HOLD CHECKING VARIABLE                     00090407
+*                R13:USED TO HOLD CHECKING VARIABLE                     00090507
+*                R14:USED TO RETURN CONTROL TO OS                       00090607
+*                R15:USED FOR MAIN                                      00090707
+*                                                                       00090807
+*  ENTRY CONDS: USING PROG3                                             00090907
+*                                                                       00091001
+*  EXIT CONDS: BR 14                                                    00091107
+*                                                                       00091201
+*  NOTES:                                                               00091307
+*                                                                       00091401
+*                                                                       00091501
+***********************************************************             00091600
+        TITLE 'JONATHAN WILSON, CSCI360-2, PROGRAM 2'                   00092001
+PROG3   CSECT                                                           00100000
+        USING PROG3,15                                                  00110000
+        L     8,=F'0'    TOTAL RENTED MOVIES INIT                       00110103
+        L     9,=F'0'    TOTAL RENTED GAMES  INIT                       00110203
+        L     10,=F'0'   TOTAL MOVIES OWNED  INIT                       00110302
+        L     11,=F'0'   TOTAL GAMES OWNED   INIT                       00110402
+        L     12,=F'0'   CHECK NUM FOR MOVIES                           00110501
+        L     13,=F'2'   CHECK NUM FOR GAMES                            00110601
+        XPRNT HEADER,65   PRINT OUTPUT HEADING                          00110716
+        XPRNT TABHEAD,77  PRINT TABLE HEADER HEAD                       00110816
+        XPRNT TABBOD,80   PRINT TABLE HEADER BODY                       00110916
+        XREAD CARD,80    READS THE CARD INTO THE PROGRAM                00111021
+TOPLOOP BC    B'0100',BOTLOOP   LOOPS UNTIL EOF                         00111101
+        SR    7,7        CLEARS PREVIOUS TOTAL OWNED                    00111201
+        XDECI 2,CARD     EXTRACTS AND STORES SERIAL NO                  00111301
+        XDECI 3,0(0,1)   EXTRACTS AND STORES AVAILABLE                  00111401
+        XDECI 4,0(0,1)   EXTRACTS AND STORES RENTED                     00111501
+        XDECI 5,0(0,1)   EXTRACTS AND STORES STATUS CODE                00111601
+        AR    7,3        ADDS AVAILABLE TO TOTAL OWNED                  00111701
+        AR    7,4        ADDS RENTED TO TOTAL OWNED                     00111801
+        CR    5,13          COMPARE STATUS TO 2                         00111908
+        BC    B'1011',GAME  CHECKS IF GAME OR MOVIE                     00112001
+        AR    8,4           ADDS TO TOTAL RENTED MOVIES                 00112123
+        AR    10,7          ADDS TOTAL TO MOVIES OWNED                  00112201
+        CR    5,12          COMPARE STATUS TO 0                         00112308
+        BC    B'0011',NMOV  CHECKS IF OLD OR NEW MOVIE                  00112401
+        XDECO 2,OMSNUM      MAKES SERIAL NUMBER PRINTABLE               00112508
+        XDECO 3,OMSTOK      MAKES AVAILABLE STOCK PRINTABLE             00112608
+        XDECO 4,OMRENT   MAKES RENTED OLD MOVIES PRINTABLE              00112708
+        XDECO 7,OMTOTAL  MAKES TOTAL OWNED OLD MOVIES PRINTABLE         00112808
+        XPRNT OMLINE,79  PRINTS OLD MOVIE LINE                          00112920
+        B     ENDPL      LEAVES PRINTING STAGE                          00113001
+NMOV    XDECO 2,NMSNUM   MAKES SERIAL NUMBER PRINTABLE                  00113108
+        XDECO 3,NMSTOK   MAKES NEW MOVIES AVAILABLE PRINTABLE           00113208
+        XDECO 4,NMRENT   MAKES RENTED NEW MOVIES PRINTABLE              00113308
+        XDECO 7,NMTOTAL  MAKES TOTAL OWNED NEW MOVIES PRINTABLE         00113408
+        XPRNT NMLINE,79  PRINTS NEW MOVIE LINE                          00113520
+        B     ENDPL      ENDS LINE PRINT                                00113608
+GAME    AR    11,7    ADDS TOTAL TO GAMES OWNED                         00113701
+        AR    9,4     ADDS TO TOTAL RENTED GAMES                        00113823
+        CR    5,13         COMPARES TOTAL                               00113908
+        BC    B'0011',NGAM CHECKS IF STATUS IS GREATER THAN 2           00114001
+        XDECO 2,OGSNUM     MAKES SERIAL NUMBER PRINTABLE                00114116
+        XDECO 3,OGSTOK   MAKES OLD GAMES IN STOCK PRINTABLE             00114216
+        XDECO 4,OGRENT   MAKES RENTED OLD GAMES PRINTABLE               00114316
+        XDECO 7,OGTOTAL  MAKES TOTAL OWNED OLD GAMES PRINTABLE          00114416
+        XPRNT OGLINE,84  PRINTS OLD GAME PRINT LINE                     00114520
+        B     ENDPL      ENDS LINE PRINTING                             00114616
+NGAM    XDECO 2,NGSNUM   MAKES NEW GAME SERIAL NUMBER PRINTABLE         00114716
+        XDECO 3,NGSTOK   MAKES AVAILABLE NEW GAMES PRINTABLE            00114816
+        XDECO 4,NGRENT   MAKES RENTED NEW GAMES PRINTABLE               00114916
+        XDECO 7,NGTOTAL  MAKES TOTAL NEW GAMES OWNED PRINTABLE          00115016
+        XPRNT NGLINE,84  PRINTS NEW GAME PRINT LINE                     00115120
+ENDPL   XREAD CARD,80    READS THE NEXT LINE OF CARD                    00115221
+        B     TOPLOOP    RETURNS TO TOP OF LOOP                         00115301
+BOTLOOP XDECO 10,TMOVS                                                  00115426
+        XDECO 11,TGAMS                                                  00115526
+        SR    7,7        EMPTIES REGISTER 7                             00115626
+        SR    6,6        EMPTIES REGISTER 6                             00115701
+        SR    5,5        EMPTIES REGISTER 5                             00115801
+        L     5,=F'100'  STORES 100 IN REGISTER 5                       00115916
+        AR    7,8        COPY TOTAL RENTED MOVIES TO R7                 00116001
+        MR    6,5        MULTIPLY TOTAL RENTED MOVIES BY 100            00116101
+        SR    5,5        EMPTY REGISTER 5                               00116201
+        DR    6,10       DIVIDE BY TOTAL OWNED MOVIES                   00116301
+        SR    4,4        EMPTY REGISTER 4                               00116401
+        AR    5,6        COPY REMAINDER TO R4 64 BIT STRING             00116501
+        MR    4,13       MULTIPLY REMAINDER BY 2                        00116601
+        CR    5,7            COMPARE REMAINDER AND QUOTIENT             00116716
+        BC    B'0101',NOADDM  BRANCH TO NOADDM IF NOT GREATER OR EQUAL  00116816
+        A     7,=F'1'    ADDS 1 IF ROUNDING                             00116916
+NOADDM  XDECO 7,PMOVS    STORES AND MAKES PERCENTAGE PRINTABLE          00117016
+        SR    7,7        EMPTY REGISTER 7                               00117116
+        SR    6,6        EMPTY REGISTER 6                               00117216
+        SR    5,5        EMPTY REGISTER 5                               00117316
+        SR    4,4        EMPTY REGISTER 4                               00117416
+        L     5,=F'100'  STORE 100 IN REGISTER 5                        00117516
+        AR    7,9        COPY TOTAL RENTED GAMES TO REG 7               00117616
+        MR    6,5        MULTIPLY TOTAL RENTED BY 100                   00117716
+        SR    5,5        EMPTY REGISTER 5                               00117816
+        DR    6,11       DIVIDE NEW PRODUCT BY TOTAL OWNED GAMES        00117916
+        AR    5,6             COPY REMAINDER TO REG 5                   00118016
+        MR    4,13            MULTIPLY REMAINDER BY 2                   00118116
+        CR    5,7             CHECKS FOR ROUNDING                       00118216
+        BC    B'0101',NOADDG  BRANCHS IF NOT ROUNDING                   00118316
+        A     7,=F'1'         ADDS ONE IF ROUNDING                      00118416
+NOADDG  XDECO 7,PGAMS         MAKES PERCENT OF GAMES PRINTABLE          00118516
+        XPRNT EMPTYL,30       PRINTS EMPTY LINE                         00118616
+        XPRNT TMLINE,36       PRINTS TOTAL MOVIES LINE                  00118724
+        XPRNT PMLINE,48       PRINTS PERCENT OF MOVIES LINE             00118816
+        XPRNT EMPTYL,30       PRINTS EMPTY LINE                         00118916
+        XPRNT TGLINE,37       PRINTS  TOTAL GAMES LINE                  00119016
+        XPRNT PGLINE,47       PRINTS PERCENT OF GAMES LINE              00119116
+QUIT    BR    14              GIVES CONTROL TO OS                       00119216
+***********************************************************             00119300
+        LTORG                                                           00119400
+***********************************************************             00119501
+HEADER  DC    C' '                                                      00119609
+        DC    CL20' '                                                   00119711
+        DC    C'MOVIE AND GAME RENTAL INFORMATION'                      00119809
+        DC    CL25' '                                                   00119909
+TABHEAD DC    C' '                                                      00120009
+        DC    C'STOCK'                                                  00120109
+        DC    CL10' '                                                   00120209
+        DC    C'NUMBER'                                                 00120309
+        DC    CL10' '                                                   00120409
+        DC    C'NUMBER'                                                 00120509
+        DC    CL10' '                                                   00120609
+        DC    C'TOTAL NUMBER'                                           00120713
+        DC    CL10' '                                                   00120813
+        DC    C'RELEASE'                                                00120913
+TABBOD  DC    C' '                                                      00121012
+        DC    C'NUMBER'                                                 00121112
+        DC    CL9' '                                                    00121212
+        DC    C'IN STOCK'                                               00121312
+        DC    CL7' '                                                    00121412
+        DC    C'RENTED OUT'                                             00121512
+        DC    CL6' '                                                    00121612
+        DC    C'OF MOVIES AND GAMES'                                    00121712
+        DC    CL4' '                                                    00121815
+        DC    C'STATUS'                                                 00121912
+        DC    CL10' '                                                   00122012
+CARD    DS    80C                                                       00122121
+OMLINE  DC    C' '                                                      00122201
+OMSNUM  DS    12C                                                       00122317
+OMSTOK  DS    12C                                                       00122417
+OMRENT  DS    12C                                                       00122517
+        DC    CL5' '                                                    00122618
+OMTOTAL DS    12C                                                       00122717
+        DC    CL15' '                                                   00122820
+ODMOV   DC    C' OLD MOVIE'                                             00122901
+NMLINE  DC    C' '                                                      00123001
+NMSNUM  DS    12C                                                       00123117
+NMSTOK  DS    12C                                                       00123217
+NMRENT  DS    12C                                                       00123317
+        DC    CL5' '                                                    00123418
+NMTOTAL DS    12C                                                       00123517
+        DC    CL15' '                                                   00123620
+NWMOV   DC    C' NEW MOVIE'                                             00123701
+OGLINE  DC    C' '                                                      00123901
+OGSNUM  DS    12C                                                       00124017
+OGSTOK  DS    12C                                                       00124117
+OGRENT  DS    12C                                                       00124217
+        DC    CL5' '                                                    00124318
+OGTOTAL DS    12C                                                       00124417
+        DC    CL15' '                                                   00124520
+OGAME   DC    C' OLD VIDEO GAME'                                        00124601
+NGLINE  DC    C' '                                                      00124801
+NGSNUM  DS    12C                                                       00124917
+NGSTOK  DS    12C                                                       00125017
+NGRENT  DS    12C                                                       00125117
+        DC    CL5' '                                                    00125218
+NGTOTAL DS    12C                                                       00125317
+        DC    CL15' '                                                   00125420
+NGAME   DC    C' NEW VIDEO GAME'                                        00125501
+TMLINE  DC    C' '                                                      00125701
+        DC    C' TOTAL NUMBER OF MOVIES:'                               00125801
+TMOVS   DS    CL12                                                      00125925
+PMLINE  DC    C' '                                                      00126101
+        DC    C' PERCENTAGE OF MOVIES RENTED OUT:'                      00126201
+PMOVS   DS    12C                                                       00126317
+TGLINE  DC    C' '                                                      00126501
+        DC    C' TOTAL NUMBER OF GAMES:'                                00126601
+TGAMS   DS    CL12                                                      00126725
+PGLINE  DC    C' '                                                      00126901
+        DC    C' PERCENTAGE OF GAMES RENTED OUT:'                       00127001
+PGAMS   DS    12C                                                       00127117
+EMPTYL  DC    CL130' '                                                  00127301
+        END   PROG3                                                     00127401
+/*                                                                      00128000
+//FT05F001 DD DSN=KC02330.CSCI360.FILES(DATA3),DISP=SHR                 00130000
+//                                                                      00140000

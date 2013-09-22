@@ -1,0 +1,266 @@
+*********************************************************************** 00010000
+* AUTHOR: JONATHAN WILSON                                               00020000
+*                                                                       00030000
+* NAME:   PROG5                                                         00040000
+*                                                                       00050000
+* FUNCTION: COLLECT INPUT, FORM A TABLE, SORT THE TABLE, PRINT THE      00060003
+*           THREE TIMES                                                 00061003
+*                                                                       00062003
+*                                                                       00070000
+* INPUT:    CARD                                                        00080003
+*                                                                       00090000
+* OUTPUT:   TABLE CONTENTS, VARIOUS FORMATS                             00100003
+*                                                                       00110000
+* ENTRY CONDS: PROG5                                                    00120003
+*                                                                       00130000
+* REGISTER USAGE:  R1: XREAD                                            00140003
+*                  R3: INPUT CONVERSION                                 00141003
+*                  R4: INPUT CONVERSION                                 00142003
+*                  R8: TEMP STORAGE                                     00143003
+*                  R9: TEMP STORAGE                                     00144003
+*                  R11: BRANCH TO SUBROUTINES                           00145003
+*                  R14: GIVE CONTROL TO OS                              00146003
+*                  R15: PROG5                                           00147003
+*                                                                       00150000
+*                                                                       00160000
+*                                                                       00170000
+*                                                                       00180000
+*                                                                       00190000
+*                                                                       00200000
+* EXIT CONDS:                                                           00210000
+*                                                                       00220000
+*********************************************************************** 00230000
+//KC03FEDF JOB ,'JONATHAN WILSON',MSGCLASS=H                            00231000
+//STEP1 EXEC PGM=ASSIST                                                 00232000
+//STEPLIB DD DSN=KC02293.ASSIST.LOADLIB,DISP=SHR                        00233000
+//SYSPRINT DD SYSOUT=*                                                  00234000
+//SYSIN DD *                                                            00235000
+*********************************************************************** 00240000
+* PROGRAM 5                                                             00250000
+*********************************************************************** 00260000
+         TITLE 'JONATHAN WILSON, CSCI 360-2, PROGRAM 5'                 00270003
+PROG5    CSECT                                                          00280003
+         USING PROG5,15                                                 00290003
+         XREAD CARD,80      RETRIEVES INPUT FROM DATAFILE               00291003
+         XDECI 3,CARD       RETRIEVE FIRST MULTIPLE FOR 2ND TABLE       00292003
+         XDECI 4,0(0,1)     RETRIEVE SECOND MULTIPLE FOR 3RD TABLE      00293003
+         AR    8,3          COPY MULTIPLE 1                             00293103
+         AR    9,4          COPY MULTIPLE 2                             00293203
+         XDECO 8,MULTI1     MAKES MULTIPLE PRINTABLE                    00293303
+         XDECO 9,MULTI2     MAKES MULTIPLE 2 PRINTABLE                  00293403
+         ST    3,SECTAB     STORES MULTIPLE 1                           00294003
+         ST    4,THRDTAB    STORES MULTIPLE 2                           00295003
+*                                                                       00295105
+         ST    1,BUFF       STORES CURRENT INPUT DATA INTO REG 1        00295203
+         LA    1,BDPLIST    LOAD BUILD PARAMATERS                       00295303
+         BAL   11,BUILD     CALLS BUILD SUBROUTINE                      00295403
+*                                                                       00295605
+*        LA    1,STPLIST    LOAD SORT PARAMATERS                        00295723
+*        BAL   11,SORT      CALLS SORT SUBROUTINE                       00295823
+*                                                                       00296005
+         XPRNT ALLHEAD,18   PRINTS ALL HEADER                           00296103
+         LA    1,PTPLIST    LOAD PRINT PARAMATERS                       00297003
+         BAL   11,PRINT      BRANCH PRINT SUBROUTINE                    00298017
+*                                                                       00299005
+         L     3,SECTAB     LOAD MULTIPLE INTO REGISTER 3               00299103
+         ST    3,MULTI      STORE MULTIPLE INTO PARAMATER               00299203
+         XPRNT MULTHD1,29   PRINT HEADING                               00299303
+         LA    1,PTPLIST    LOADS PRINT PARAMATERS                      00299403
+         BAL   11,PRINT     BRANCHES TO PRINT SUBROUTINE                00299503
+*                                                                       00299605
+         L     4,THRDTAB    LOAD MULTIPLE INTO REGISTER 4               00299703
+         ST    4,MULTI      STORE MULTIPLE INTO PARAMATER               00299803
+         XPRNT MULTHD2,29   PRINT HEADING                               00299903
+         LA    1,PTPLIST    LOADS PRINT PARAMATERS                      00300003
+         BAL   11,PRINT     BRANCHES TO PRINT SUBROUTINE                00300103
+QUIT     BR    14           SENDS CONTROL BACK TO OS                    00301003
+*                                                                       00310000
+*********************************************************************** 00320000
+         LTORG                                                          00330003
+*********************************************************************** 00340000
+* STORAGE FOR MAIN STARTS HERE                                          00340102
+*********************************************************************** 00340202
+TABLE    DC    60F'-1'                                                  00340303
+ENDTABLE DS    0H                                                       00340407
+EOT      DC    A(TABLE)                                                 00340503
+MAINSVE  DS    16F                                                      00340603
+CARD     DS    80C                                                      00341003
+SECTAB   DS    F                                                        00342003
+THRDTAB  DS    F                                                        00343003
+BUFF     DS    F                                                        00343103
+MULTI    DS    F                                                        00343203
+AVAIL    DC    A(TABLE)                                                 00343326
+BDPLIST  DC    A(CARD)                                                  00343409
+         DC    A(AVAIL)                                                 00343527
+*                                                                       00343603
+PTPLIST  DC    A(TABLE)                                                 00343703
+         DC    A(AVAIL)                                                 00343803
+         DC    A(MULTI)                                                 00343903
+*                                                                       00344003
+STPLIST  DC    A(TABLE)                                                 00344103
+         DC    A(AVAIL)                                                 00344207
+*                                                                       00344303
+ALLHEAD  DC    C' '                                                     00344403
+         DC    CL17'THE NUMBERS - ALL'                                  00344503
+MULTHD1  DC    C' '                                                     00344603
+         DC    CL27'THE NUMBERS - MULTIPLES OF '                        00344703
+MULTI1   DS    12C                                                      00344811
+MULTHD2  DC    C' '                                                     00344903
+         DC    CL27'THE NUMBERS - MULTIPLES OF '                        00345003
+MULTI2   DS    12C                                                      00345111
+*********************************************************************** 00345202
+*STORAGE FOR MAIN ENDS HERE                                             00345302
+*********************************************************************** 00345402
+* SUBROUTINE NAME: BUILD                                                00345503
+* FUNCTION: CREATE A TABLE FROM CARD INPUT                              00345603
+*                                                                       00345703
+* INPUT: BDPLIST                                                        00345803
+*                                                                       00345903
+* OUTPUT: BDPLIST                                                       00346003
+*                                                                       00346103
+* ENTRY CONDS: BAL,BUILD                                                00346203
+*                                                                       00346303
+* REGISTER USAGE: R1: PARAMTERS                                         00346403
+*                 R2: BUFFER STORAGE                                    00346503
+*                 R3: NEXT AVAILABLE TABLE POSITION                     00346603
+*                 R5: TABLE STORAGE                                     00346703
+*                 R11: BRANCH BACK TO MAIN                              00346803
+*                                                                       00346903
+* EXIT CONDS: BR 11                                                     00347003
+*********************************************************************** 00347103
+BUILD    DS    0H               START BUILD SUBROUTINE                  00347203
+         STM   2,5,BUILDSV      STORE USED REGISTERS                    00347303
+         LM    2,3,0(1)         LOAD PARAMETERS                         00347403
+         L     4,0(3)                                                   00347528
+TBLOOP1  XREAD 0(2),80          READ NEXT LINE OF CARD                  00347603
+         BC    B'0100',EBLOOP1  CHECK FOR END OF FILE                   00347703
+         XDECI 5,0(2)           CONVERT INPUT TO BE WORKABLE            00347814
+         ST    5,0(,3)                                                  00347915
+         LA    3,4(0,4)         LOAD NEXT ADDRESS INTO TABLE            00348029
+DECILP   XDECI 5,0(,1)          MAKE NEXT INPUT DATA WORKABLE           00348116
+         ST    5,0(,3)                                                  00348215
+         LA    3,4(0,4)         LOAD NEXT ADDRESS INTO TABLE            00348329
+         BC    B'0001',TBLOOP1  CHECK IF END OF DATA LINE               00348403
+         B     DECILP           IF NOT BRANCH TO DECILP                 00348503
+EBLOOP1  DS    0H               END OF LOOPS                            00348603
+         ST    4,0(3)           STORE NEXT AVAILABLE TABLE ENTRY        00348728
+         LM    2,5,BUILDSV      RESTORE REGISTERS                       00348803
+         BR    11               BRANCH BACK TO MAIN                     00348903
+*********************************************************************** 00349002
+*STORAGE FOR BUILD STARTS HERE                                          00349102
+*********************************************************************** 00349202
+BUILDSV  DS    16F                                                      00349303
+*                                                                       00349402
+*********************************************************************** 00349502
+*STORAGE FOR BUILD ENDS HERE                                            00349602
+*********************************************************************** 00349702
+*SUBROUTINE NAME: PRINT                                                 00349803
+*                                                                       00349902
+* FUNCTION: PRINTS A TABLE ACCORDING TO PARAMATERS PASSED               00350003
+*                                                                       00350103
+* INPUT: PTPLIST                                                        00350203
+*                                                                       00350303
+* OUTPUT: PTPLIST                                                       00350403
+*                                                                       00350503
+* ENTRY CONDS: BAL  11,PRINT                                            00350603
+*                                                                       00350703
+* EXIT CONDS: BR  11                                                    00350803
+*                                                                       00350903
+* REGISTER USAGE:                                                       00351003
+*                                                                       00351103
+*                                                                       00351203
+*********************************************************************** 00351303
+PRINT    DS    0H                                                       00351403
+         STM   2,9,PRINTSV      STORE THE REGISTERS                     00351504
+         XDUMP                                                          00351622
+         SR    9,9                                                      00351719
+         A     9,=F'1'                                                  00351819
+         S     9,=F'1'                                                  00351919
+         LM    2,4,0(1)         LOAD THE PARAMETERS                     00352004
+         LA    5,0(2)           LOAD TABLE INTO REG 5                   00352104
+         LA    8,PLINE1         LOAD PLINE ADDRESS                      00352204
+PTLOOP1  C     5,0(3)              CHECK IF END OF TABLE                00352320
+         BC    B'1010',PELOOP1    IF SO END LOOP                        00352504
+         C     9,=F'5'            CHECK IF COUNTER IS 5                 00352604
+         BC    B'1010',PRINTL     IF SO PRINT LINE                      00352825
+         AR    7,5                PREP CHECK NUMBER                     00352904
+         M     6,=F'1'          CONVERT NUMBER TO 64 BIT                00353004
+         D     6,0(3)           DIVIDE NUMBER BY MULTIPLE               00353104
+         C     6,=F'0'          COMPARE REMAINDER TO ZERO               00353204
+         BC    B'1000',NEXT     IF EQUAL BRANCH                         00353304
+         LA    5,4(2)           ELSE LOAD NEXT NUMBER                   00353504
+         B     PTLOOP1          BRANCH TO TOP OF LOOP                   00353606
+NEXT     XDECO 5,0(,8)          MAKE NUMBER PRINTABLE                   00353704
+         A     9,=F'1'          INCREMENT COUNTER                       00353804
+         LA    5,12(,8)         INCREMENT PRINTLINE                     00353904
+         B     PTLOOP1          BRANCH TO TOP OF LOOP                   00354006
+PRINTL   XPRNT PLINE,61         PRINT PRINTLINE                         00354108
+         SR    9,9              CLEAR COUNTER                           00354204
+         LA    8,PLINE1         RESET PRINT LINE                        00354304
+         B     PTLOOP1          BRANCH TO TOP OF LOOP                   00354406
+PELOOP1  LM    2,9,PRINTSV      LOAD PRE-ROUTINE REGISTERS              00354505
+         BR    11               RETURN TO MAIN                          00354604
+*********************************************************************** 00354702
+*STORAGE FOR PRINT STARTS HERE                                          00354802
+*********************************************************************** 00354902
+PRINTSV  DS    16F                                                      00355003
+PLINE    DC    C' '                                                     00355103
+PLINE1   DS    12C                                                      00355203
+PLINE2   DS    12C                                                      00355303
+PLINE3   DS    12C                                                      00355403
+PLINE4   DS    12C                                                      00355503
+PLINE5   DS    12C                                                      00355603
+*********************************************************************** 00355702
+*STORAGE FOR PRINT ENDS HERE                                            00355802
+*********************************************************************** 00355902
+*SUBROUTINE NAME: SORT                                                  00356003
+*                                                                       00356102
+* FUNCTION: SORT THE TABLE IN ASCENDING ORDER                           00356203
+*                                                                       00356303
+* INPUT: STPLIST                                                        00356403
+*                                                                       00356503
+* OUTPUT: STPLIST                                                       00356603
+*                                                                       00356703
+* ENTRY CONDS: BAL  11,SORT                                             00356803
+*                                                                       00356903
+* EXIT CONDS: BR 11                                                     00357003
+*                                                                       00357103
+* REGISTER USAGE:                                                       00357203
+*********************************************************************** 00357303
+SORT    DS    0H            START SUBROUTINE                            00357403
+        STM   2,9,SORTSV    STORE REGISTERS                             00357503
+        LM    2,3,0(1)      LOAD PARAMATERS                             00357603
+        LA    5,0(2)        LOAD TABLE ADDRESS INTO REG 5               00357703
+SRTLP1  LA    3,4(,5)       LOAD NEXT ADDRESS IN TABLE TO REG 3         00357803
+        C     5,0(3)        COMPARE TO LAST AVAILABLE SPOT              00357907
+        BC    B'1010',STRELP1   BRANCH TO END OF LOOP                   00358007
+SRTLP2  C     3,0(3)            COMPARE TO LAST AVAILABLE SPOT          00358107
+        BC    B'1010',STRELP2                                           00358203
+        CR    5,3                                                       00358303
+        BC    B'0010',SWITCH                                            00358403
+NXTLP2  LA    3,4(0,3)                                                  00358503
+        B     SRTLP2                                                    00358606
+SWITCH  AR    7,5             COPY REG 5 TO REG 7                       00358703
+        SR    5,5             DELETE REG 5                              00358803
+        AR    5,3             ADD REG 3 TO REG 5                        00358903
+        SR    3,3             DELETE REG 3                              00359003
+        AR    3,7             ADD REG 7 TO REG 3                        00359103
+        B     NXTLP2                                                    00359206
+STRELP2 LA    5,4(2)                                                    00359303
+        B     SRTLP1                                                    00359406
+STRELP1 LM    2,9,SORTSV                                                00359503
+        BR    11                                                        00359603
+*********************************************************************** 00359702
+*STORAGE FOR SORT STARTS HERE                                           00359802
+*********************************************************************** 00359902
+SORTSV  DS    16F                                                       00360003
+PTR1    DS    1F                                                        00360103
+PTR2    DS    1F                                                        00360203
+*                                                                       00360302
+*********************************************************************** 00360402
+*STORAGE FOR SORT ENDS HERE                                             00360502
+*********************************************************************** 00360602
+        END   PROG5                                                     00360700
+/*                                                                      00361000
+//FT05F001 DD DSN=KC02330.CSCI360.FILES(DATA5),DISP=SHR                 00370000
+//                                                                      00380000

@@ -1,0 +1,411 @@
+//KC03FEDA JOB ,'Name',MSGCLASS=H
+//STEP1 EXEC PGM=ASSIST
+//STEPLIB DD DSN=KC02293.ASSIST.LOADLIB,DISP=SHR
+//SYSPRINT DD SYSOUT=*
+//SYSIN DD *
+         TITLE 'CSCI 360 - Spring 2013 - Program 8'
+***********************************************************************
+* Name:           PGM8
+*
+* Function:  This program builds a table of domestic and imported beer
+*            that is carried by a liquor store. The table is then
+*            sorted and printed.
+*
+* Input:     The input to the program is a file that contains the beer
+*            information to build the table. Each record contains an ID
+*            number, beer name, brewery location, number of cases in
+*            stock, and the price per case.
+*
+* Output:    The output from the program is one report. The report is
+*            the sorted listings of the beer inventory.
+*
+* Entry Conds:  None
+*
+* Exit Conds:   None
+*
+* Register Usage: 1  -- address of the parameter list
+*                 14 -- return control
+*                 15 -- subroutine addresses
+*
+* Pseudocode:  1. Build the table
+*              2. Sort the table
+*              3. Print the table
+*
+* Notes:   None
+***********************************************************************
+         EJECT
+*
+INPUT    DSECT
+INID     DS    CL5
+         DS    C
+INNAME   DS    CL32
+INLOC    DS    CL20
+INCASE   DS    CL3
+         DS    C
+INPRICE  DS    CL5
+*
+OUTPUT   DSECT
+OUTID    DS    F
+OUTCASE  DS    F
+OUTPRICE DS    F
+OUTLOC   DS    CL20
+OUTNAME  DS    CL32
+*
+PGM8     CSECT
+         STM   14,12,12(13)       Save the calling routine's register
+         LR    12,15              Setup the base register
+         USING PGM8,12              for the routine
+         LA    14,MAINSAVE        Find the routine's savearea
+         ST    13,4(,14)          Save the backward
+         ST    14,8(,13)            and forward pointers
+         LR    13,14
+*
+         LA    1,BPARMS           R1 -> parameter list
+         L     15,=V(BUILD)       Build the table
+         BALR  14,15
+*
+**********************************************************************
+*
+         LA    1,PPARMS           R1 -> parameter list
+         L     15,=V(SORT)        Sort the table
+         BALR  14,15
+*
+**********************************************************************
+*
+         LA    1,PPARMS           R1 -> parameter list
+         L     15,=V(PRINT)       Print the table
+         BALR  14,15
+*
+         L     13,4(,13)          Get the address of the savearea
+         LM    14,12,12(13)       Restore the calling routine's regs
+         BR    14                 I'm done!
+         LTORG
+*
+*** Storage for PGM8 ***
+*
+MAINSAVE DS    18F                Storage for registers
+BUFFER   DS    CL80               Input buffer
+PPARMS   DC    A(TABLE)           Parameter list for PRINTing and
+BPARMS   DC    A(EOT,BUFFER)        BUILDing the table
+*
+EOT      DC    A(TABLE)           Storage for logical end of table addr
+*
+         ORG   PGM8+((*-PGM8+31)/32*32)
+TABLE    DC    640F'-1'           Storage for table
+ENDTAB   DS    0X                 End of table marker
+         EJECT
+***********************************************************************
+* Name:       BUILD
+*
+* Function:   Builds a table from input records
+*
+* Entry Cond: 0(1) - Address of logical end of the table
+*             4(1) - Address of the input buffer
+*
+* Logic:      1. Read the first record
+*             2. Do while there are more records
+*             3.   Get info from the input record and put in table
+*             4.   Increment table pointer to next element
+*             5.   Read the next record
+*             6. Enddo
+*             7. Save the logical end of table address
+*
+* Registers:  1  -- address of the parameter list
+*             4  -- address of logical end of the table
+*             5  -- address of the input buffer
+*             7  -- table pointer
+*             8  -- work register to move data to table
+*
+* Notes:      None
+***********************************************************************
+         EJECT
+BUILD    CSECT ,                  Build routine
+         STM   14,12,12(13)       Save the calling routine's register
+         LR    12,15              Setup the base register
+         USING BUILD,12             for the routine
+         LA    14,BLDSAVE         Find the routine's savearea
+         ST    13,4(,14)          Save the backward
+         ST    14,8(,13)            and forward pointers
+         LR    13,14
+*
+         LM    4,5,0(1)           Load the parameters
+*                                   4 = @ EOT
+*                                   5 = @ input buffer
+*
+         L     7,0(,4)            Start at next available entry
+         USING INPUT,5
+         USING OUTPUT,7
+*
+         XREAD 0(,5),80           Read the first record
+DO1      BL    ENDDO1             Do while there are still records
+         PACK  BINTEMP,INID
+         CVB   9,BINTEMP
+         ST    9,OUTID
+         PACK  BINTEMP,INCASE
+         CVB   9,BINTEMP
+         ST    9,OUTCASE
+         PACK  BINTEMP,INPRICE
+         CVB   9,BINTEMP
+         ST    9,OUTPRICE
+*
+         MVC   OUTLOC,INLOC
+         MVC   OUTNAME,INNAME
+*
+*         XDECI 8,0(,5)               Get the ID number
+*         ST    8,0(,7)                 and store it in the table
+*
+*         XDECI 8,58(,5)              Get the # of cases in stock
+*         ST    8,4(,7)                 and store it in the table
+*
+*         XDECI 8,62(,5)              Get the price per case
+*         ST    8,8(,7)                 and store it in the table
+*
+*         MVC   12(20,7),38(5)        Move the brewer location
+*         MVC   32(32,7),6(5)           and beer name to table
+*
+         LA    7,64(,7)              Increment to next table element
+         XREAD 0(,5),80              Read the next record
+         B     DO1                   Branch to top of loop
+ENDDO1   DS    0H                 Enddo
+*
+         ST    7,0(,4)            Save the logical end of table addr
+*
+         L     13,4(,13)          Get the address of the savearea
+         LM    14,12,12(13)       Restore the calling routine's regs
+         BR    14                 I'm done!
+         LTORG
+*
+*** Storage for BUILD routine ***
+*
+         DROP  5
+         DROP  7
+BINTEMP  DS    D
+BLDSAVE  DS    18F                Storage for registers
+         EJECT
+***********************************************************************
+* Name:       PRINT
+*
+* Function:   Prints a table
+*
+* Entry Cond: 0(1) - Address of the table
+*             4(1) - Address of logical end of the table
+*
+* Logic:      1. Initialize counter to 0
+*             2. Do while there are table elements
+*             3.   Move information from table to print line
+*             4.   Increment total stock amount
+*             5.   Write the print line
+*             6.   Increment table pointer to next element
+*             7. Enddo
+*             8. Write total stock amount
+*
+* Registers:  1  -- address of the parameter list
+*             3  -- address of table beginning
+*             4  -- address of logical end of the table
+*             5  -- work register to move items from table to pline
+*             6  -- total number of cases in stock
+***********************************************************************
+         EJECT
+PRINT    CSECT ,                  Print routine
+         STM   14,12,12(13)       Save the calling routine's register
+         LR    12,15              Setup the base register
+         USING PRINT,12             for the routine
+         LA    14,PRNTSAVE        Find the routine's savearea
+         ST    13,4(,14)          Save the backward
+         ST    14,8(,13)            and forward pointers
+         LR    13,14
+*
+         LM    3,4,0(1)           Load the parameter list
+*
+         USING OUTPUT,3
+*
+         XPRNT HDRLN1,ENDHDR1-HDRLN1  Write the page
+         XPRNT HDRLN2,ENDHDR2-HDRLN2     and column
+         XPRNT HDRLN3,ENDHDR3-HDRLN3        headers for the report
+**
+         SR    6,6                Initialize total stock amount
+         SR    10,10
+*
+DO2      C     3,0(,4)            Do while NOT end of table
+         BNL   ENDDO2
+*
+         L     9,OUTID
+         CVD   9,DECTEMP1
+         MVC   IDNUM,=X'40202060202120'
+         ED    IDNUM,DECTEMP1+5
+*
+         MVC   BEER,OUTNAME
+         MVC   BREWLOC,OUTLOC
+*
+         L     9,OUTCASE
+         AR    10,9
+         CVD   9,DECTEMP2
+         MVC   CASES,=X'402020202120'
+         ED    CASES,DECTEMP2+5
+*
+         L     9,OUTPRICE
+         CVD   9,DECTEMP3
+         MVC   PRICES,=X'402020204B2020'
+         LA    1,PRICES+4
+         EDMK  PRICES,DECTEMP3+5
+*         XDUMP PRICES,16
+         BCTR  1,0
+         MVI   0(1),C'$'
+*
+*         L     5,0(,3)              Get the ID number from table
+*         XDECO 5,IDNUM                and put it on print line
+*
+*         MVC   BEER,32(3)           Put the beer name
+*         MVC   BREWLOC,12(3)          and brewery location on line
+*
+*         L     5,4(,3)              Get the # of cases available
+*         XDECO 5,NUMCASES             and put it on the print line
+*         AR    6,5                    and update total stock amount
+*
+*         L     5,8(,3)              Get the price per case
+*         XDECO 5,CASEPRC              and put it on print line
+*
+         XPRNT PLINE,ENDPLINE-PLINE Print beer information
+*
+         LA    3,64(,3)             Increment to next table element    
+         B     DO2                  Branch to top of loop
+ENDDO2   DS    0H                 Enddo
+*
+*         XDECO 6,TOTSTOCK         Put the total stock amount on pline
+         CVD    10,ADDTEMP
+         MVC   TOTSTOCK,=X'40202020202021202020'
+         ED    TOTSTOCK,ADDTEMP+5
+         XPRNT SUMLINE,ENDSUM-SUMLINE   and print it
+*
+         L     13,4(,13)          Get the address of the savearea
+         LM    14,12,12(13)       Restore the calling routine's regs
+         BR    14                 I'm done!
+         LTORG
+*
+*** Storage for PRINT routine ***
+*
+PRNTSAVE DS    18F                Storage for initial register values
+*
+HDRLN1   DC    CL42'1'            Page header
+         DC    C'Domestic and Imported Beer Information'
+ENDHDR1  DS    0C
+*
+HDRLN2   DC    CL8'0'             Column header 1
+         DC    CL10'ID #'
+         DC    CL37'Beer Name'
+         DC    CL33'Brewery Location'
+         DC    CL12'Cases'
+         DC    C'Price per Case'
+ENDHDR2  DS    0C
+*
+HDRLN3   DC    CL8' '             Column Header 2
+         DC    106CL1'-'
+ENDHDR3  DS    0C
+DECTEMP1 DS    D
+DECTEMP2 DS    D
+DECTEMP3 DS    D
+ADDTEMP  DS    D
+*
+PLINE    DC    C' '               Beer line
+         DC    CL6' '
+IDNUM    DS    PL7
+         DC    CL4' '
+BEER     DS    CL32
+         DC    CL4' '
+BREWLOC  DS    CL20
+         DC    CL10' '
+CASES    DS    PL6
+         DC    CL9' '
+PRICES   DS    PL7
+*IDNUM    DS    CL12               Storage for ID number
+*         DC    CL5' '
+*BEER     DS    CL32               Storage for name of beer
+*         DC    CL5' '
+*BREWLOC  DS    CL20               Storage for location of brewery
+*         DC    CL5' '
+*NUMCASES DS    CL12               Storage for number of cases
+*         DC    CL5' '
+*CASEPRC  DS    CL12               Storage for price of a case
+ENDPLINE DS    0C                 End of print line marker
+*
+SUMLINE  DC    CL8'-'             Summary Line
+         DC    C'Total Stock:'
+TOTSTOCK DS    PL6               Total stock amount
+         DC    C' cases'
+ENDSUM   DS    0C                 End of summary line marker
+         EJECT
+***********************************************************************
+* Name:       SORT
+*
+* Function:   Sorts a table in ASCENDING order using the SELECTION SORT
+*
+* Entry Cond: 0(1) - Address of the table
+*             4(1) - Address of next available entry
+*
+* Logic:      1. For ( TOP = 0 to N by 1 )
+*             2.   SSF = TOP
+*             3.   For ( K = TOP + 1 to N by 1 )
+*             4.     If KEY[K] < KEY[SSF]
+*             5.       SSF = K
+*             6.     Endif
+*             7.   Endfor
+*             8.   Swap RECORD[TOP] and RECORD[SSF]
+*             9. Endfor
+*
+* Registers:  1  -- address of the parameter list
+*             3  -- address of table beginning
+*             4  -- address of logical end of table
+*             5  -- holds address of smallest table element (SSF)
+*             6  -- work register to go thru the table (K)
+***********************************************************************
+         EJECT
+SORT     CSECT ,                  Sort routine
+         STM   14,12,12(13)       Save the calling routine's register
+         LR    12,15              Setup the base register
+         USING SORT,12            for the routine
+         LA    14,SORTSAVE        Find the routine's savearea
+         ST    13,4(,14)          Save the backward
+         ST    14,8(,13)            and forward pointers
+         LR    13,14
+*
+         LM    3,4,0(1)           Load the parameter list
+*
+* Register 3 = address of table     Register 4 = address of EOT
+*
+* Reg 3 = TOP                Reg 5 = SSF
+* Reg 6 = K                  0(,4) = N
+* 32(6) = KEY[K]             32(5) = KEY[SSF]
+*
+FOR1     C     3,0(,4)            For ( TOP = 0 to N by 1 )
+         BNL   ENDFOR1              get out when end of tab is reached
+         LR    5,3                  SSF = TOP
+         LA    6,64(,5)             K = TOP + 1
+FOR2     C     6,0(,4)              For( to N by 1 )
+         BNL   ENDFOR2                get out when tab end is found
+IF2      CLC   32(32,6),32(5)         If KEY[K] < KEY[SSF]
+         BNL   ENDIF2                   go around if KEY[K] >= KEY[SSF]
+         LR    5,6                      SSF = K
+ENDIF2   DS    0H                     Endif
+         LA    6,64(,6)               Increment K by 1
+         B     FOR2                   Goto top of inner for loop
+ENDFOR2  DS    0H                   Endfor
+         MVC   TEMP,0(3)            TEMP = RECORD[TOP]
+         MVC   0(64,3),0(5)         RECORD[TOP] = RECORD[SSF]
+         MVC   0(64,5),TEMP         RECORD[SSF] = TEMP
+         LA    3,64(,3)             Increment TOP by 1
+         B     FOR1                 Goto top of outer for loop
+ENDFOR1  DS    0H                 Endfor
+*
+         L     13,4(,13)          Get the address of the savearea
+         LM    14,12,12(13)       Restore the calling routine's regs
+         BR    14                 I'm done!
+         LTORG
+*
+*** Storage for SORT routine ***
+*
+SORTSAVE DS    18F                Register Savearea
+TEMP     DS    CL64               Temporary storage area for swapping
+         END   PGM8
+/*
+//FT05F001 DD DSN=KC02330.CSCI360.FILES(DATA8),DISP=SHR
+//

@@ -1,0 +1,469 @@
+//KC03FEDF JOB ,'WebJCL',MSGCLASS=H                           
+//STEP1 EXEC PGM=ASSIST                                                 
+//STEPLIB DD DSN=KC02293.ASSIST.LOADLIB,DISP=SHR                        
+//SYSPRINT DD SYSOUT=*                                                  
+//SYSIN DD *
+*-------------------------------------------
+* PROG5 BY JONATHAN WILSON
+*-------------------------------------------
+*NAME: PROG7
+*
+*FUNCTION: CALL BUILD AND PRINT SUBROUTINES
+*
+*INPUT: NONE
+*
+*OUTPUT: NONE
+*
+*ENTRY CONDS: CSECT
+*
+*REGISTER USAGE: R1: LOADING PARAMETER LISTS
+*                
+*                R12-R15: Linkage for external routines
+*                R14: RETURNING CONTROL TO OS
+*
+*EXIT CONDS: BR 14
+*
+*
+************************************************                           
+          TITLE 'JONATHAN WILSON, CSCI 360-2, PROGRAM 7'
+PROG7     CSECT                                                           
+          STM   14,12,12(13)
+          LR    12,15
+          USING PROG7,12
+          LA    14,MNSAVE
+          ST    13,4(,14)
+          ST    14,8(,13)
+          LR    13,14
+          LA    1,BDPLIST    LOAD BUILD PARAMATERS                       
+          L     15,=V(BUILD)
+          BALR  14,15        BRANCH TO BUILD
+          LA    1,BDPLIST    LOAD BUILD PARAMATERS                       
+          L     15,=V(BUILD)
+          BALR  14,15        BRANCH TO BUILD
+          LA    1,PTPLIST    LOAD PRINT PARAMATERS                       
+          L     15,=V(PRINT)
+          BALR  14,15        BRANCH TO PRINT
+          LA    1,STPLIST    LOAD SORT PARAMATERS                       
+          L     15,=V(SORT)
+          BALR  14,15       BRANCH TO SORT
+          LA    1,UDPLIST    LOAD UPDATE PARAMATERS                       
+          L     15,=V(UPDATE)
+          BALR  14,15        BRANCH TO UPDATE
+          LA    1,PTPLIST    LOAD PRINT PARAMATERS                       
+          L     15,=V(PRINT)
+          BALR  14,15        BRANCH TO PRINT
+          L     13,4(,13)
+          LM    14,12,12(13)
+QUIT      BR    14           Branches back to OS
+*******************************************
+          LTORG
+*******************************************
+*STORAGE FOR MAIN STARTS HERE
+*******************************************
+MNSAVE    DS    18F
+CARD      DS    80C
+TABLE     DC    390F'-1'
+AVAIL     DC    A(TABLE)
+BDPLIST   DC    A(CARD)
+          DC    A(AVAIL)
+PTPLIST   DC    A(TABLE)
+          DC    A(AVAIL)
+STPLIST   DC    A(TABLE)
+          DC    A(AVAIL)
+UDPLIST   DC    A(TABLE)
+          DC    A(AVAIL)
+          DC    A(CARD)
+*
+*******************************************
+*STORAGE FOR MAIN ENDS HERE
+*******************************************
+*-------------------------------------------
+*NAME: BUILD
+*
+*FUNCTION: CONSTRUCT TABLE USING CARD INPUT
+*
+*INPUT: AVAIL, CARD
+*
+*OUTPUT: AVAIL 
+*
+*ENTRY CONDS: BALR 14,15
+*
+*REGISTER USAGE: R1: PARAMETERS
+*                R2: CARD
+*                R3: AVAIL
+*                R4: PTR TO LAST TABLE ENTRY
+*                R12-R15: Linkage to external routines
+*
+*EXIT CONDS: BR 14
+*
+*
+************************************************     
+*******************************************
+*BUILD
+*******************************************
+BUILD     CSECT               START BUILD SUBROUTINE
+          STM   14,12,12(13)
+          LR    12,15
+          USING BUILD,12
+          LA    14,BUILDSV
+          ST    13,4(,14)
+          ST    14,8(,13)
+          LR    13,14
+          LM    2,3,0(1)
+          L     4,0(3)
+          XREAD 0(,2),80         READ FIRST INPUT LINE
+          BC    B'0100',EBLOOP1  BRANCH IF END OF FILE
+          CLC   0(2,2),=C'-1'
+          BC    B'1000',EBLOOP1
+TBLOOP1   PACK  0(2,4),0(2,2)    PACK PLAYER NUMBER
+          MVC   2(25,4),5(2)     MOVE PLAYER NAME TO TABLE
+          MVC   27(1,4),3(2)     MOVE PLAYER POSITION TO TABLE
+          PACK  28(2,4),31(2,2)  PACK NUMBER OF GAMES 
+          PACK  30(2,4),34(2,2)  PACK GOALS
+          PACK  32(2,4),37(2,2)  PACK ASSISTS
+          PACK  34(3,4),40(3,2)  PACK SHOTS
+          PACK  37(2,4),44(2,2)  PACK +/- RATING
+          XREAD 0(,2),80
+          BC    B'0100',EBLOOP1  BRANCH IF END OF FILE
+          CLC   0(2,2),=C'-1'
+          BC    B'1000',EBLOOP1
+          LA    4,39(,4)         INCREMENT POINTER
+          B     TBLOOP1          BRANCH TO TOP OF LOOP
+EBLOOP1   ST    4,0(,3)          STORE LAST AVAILABLE TABLE POS
+          L     13,4(,13)
+          LM    14,12,12(13)
+          BR    14
+*******************************************
+*STORAGE FOR BUILD STARTS HERE
+*******************************************
+          LTORG
+BUILDSV   DS    18F
+*
+*******************************************
+*STORAGE FOR BUILD ENDS HERE
+*******************************************
+*-------------------------------------------
+*NAME: PRINT
+*
+*FUNCTION: FORMAT AND PRINT CONTENTS OF TABLE
+*
+*INPUT:    TABLE, AVAIL
+*
+*OUTPUT:   FORMATTED TABLE OF OUTPUT DATA
+*
+*ENTRY CONDS: BALR  14,15
+*
+*REGISTER USAGE: R1:PARAMETERS
+*                R2:TABLE
+*                R3:AVAIL
+*                R12-R15: Linkage for external routine
+*
+*EXIT CONDS: BR 14
+*
+*
+************************************************     
+*******************************************
+*PRINT
+*******************************************
+PRINT      CSECT
+           STM   14,12,12(13)
+           LR    12,15
+           USING PRINT,12
+           LA    14,PRINTSV
+           ST    13,4(,14)
+           ST    14,8(,13)
+           LR    13,14
+           LM    2,3,0(1)         LOAD PARAMETERS
+           XPRNT PBLANK,80
+           XPRNT PHDLINE,PHDELINE-PHDLINE
+           XPRNT PBLANK,80 
+           XPRNT HPLINE,EHPLINE-HPLINE      Creates print line
+TPLOOP1    C     2,0(3)           COMPARE TABLE TO END OF TABLE
+           BNL   BPLOOP1          BRANCH ON NOT LOW
+           MVC   PLAYNUM(4),=X'40202120'   FORMAT PLAYER NUMBER
+           ED    PLAYNUM(4),0(2)          MAKE PLAYER NUMBER PRINTABLE
+           MVC   PLYNAME(25),2(2)         MAKE PLAYER NAME PRINTABLE
+*
+           CLI   27(2),C'C'       CHECK IF POSITION IS C
+           BC    B'1000',CNTR     IF SO BRANCH TO CENTER
+           CLI   27(2),C'D'       CHECK IF POSITION IS D
+           BC    B'1000',DEF      IF SO BRANCH TO DEFENSE
+           CLI   27(2),C'G'       CHECK IF POSITION IS G
+           BC    B'1000',GOALIE   IF SO BRANCH TO GOALIE
+           CLI   27(2),C'L'       CHECK IF POSITION IS L
+           BC    B'1000',LFTWNG   IF SO BRANCH TO LEFTWING
+           CLI   27(2),C'R'       CHECK IF POSITION IS R
+           BC    B'1000',RTWING   IF SO BRANCH TO RIGHTWING
+*
+NAMESTRT   MVC   GAMES(4),=X'40202120'  FORMAT GAMES
+           ED    GAMES(4),28(2)         MAKE GAMES PRINTABLE
+           MVC   GOALS(4),=X'40202120'  FORMAT GOALS
+           ED    GOALS(4),30(2)         MAKE GOALS PRINTABLE
+           MVC   ASSISTS(4),=X'40202120'  FORMAT ASSISTS
+           ED    ASSISTS(4),32(2)       MAKE ASSISTS PRINTABLE
+*
+*Points stuff here
+           ZAP   ADDTEMP(2),30(2,2)     MAKE ROOM FOR ARITHMATIC
+           AP    ADDTEMP(2),32(2,2)     ADD GOALS AND ASSISTS
+           MVC   POINTS(4),=X'40202120' FOR POINTS
+           ED    POINTS(4),ADDTEMP      MAKE POINTS PRINTABLE
+*    
+*
+*
+           MVC   SHOTS(6),=X'402020202120' FORMAT SHOTS
+           ED    SHOTS(6),34(2)            MAKE SHOTS PRINTABLE
+*
+*PERCENT STUFF STARTS HERE
+*
+           ZAP   TEMP(8),30(2,2)    MAKE SPACE FOR DIVISION
+           ZAP   34(3),34(3,2)      CHECK DIVISOR
+           BZ    ZEROFIX            IF ZERO BRANCH TO ZEROFIX
+           SRP   TEMP(8),4,0        SHIFT TO MAKE ROOM FOR DIVISION
+           DP    TEMP(8),34(3,2)    DIVIDE
+           SRP   TEMP(5),(64-1),5   SHIFT AND ROUND TO FORMAT QUOTIENT
+           MVC   PERCENT(11),=X'4020202020202021204B20' 
+           ED    PERCENT(11),TEMP       MAKE PERCENT PRINTABLE
+*
+ZEROFIX    MVC   PERCENT(11),=X'4020202020202021204B20' 
+           ED    PERCENT(11),TEMP                   MAKE 0 PRINTABLE
+*
+           LA    1,PMRATE+3            LOAD SYMBOL TO REG 1
+           MVC   PMRATE(4),=X'40202120'
+           EDMK  PMRATE(4),37(2)      FORMAT PMRATE
+           BCTR  1,0        
+           BP    PLUSSIGN             BRANCH POSITIVE
+           BM    NEGSIGN              BRANCH NEGATIVE
+SIGNDONE   DS    0H
+ENDP       XPRNT PRINTL,ENDPRNTL-PRINTL     PRINT LINE
+           LA    2,39(2)                    INCREMENT TABLE
+           B     TPLOOP1                    BRANCH TO TOP OF LOOP
+*
+BPLOOP1    L     13,4(,13)
+           LM    14,12,12(13)
+           BR    14
+*
+CNTR       MVC  POSNAME(10),=C'Center    '      PRINT CENTER
+           B    NAMESTRT                        BRANCH TO LOOP
+DEF        MVC  POSNAME(10),=C'Defense   '      PRINT DEFENSE
+           B    NAMESTRT                        BRANCH TO LOOP
+GOALIE     MVC  POSNAME(10),=C'Goalie    '      PRINT GOALIE
+           B    NAMESTRT                        BRANCH TO LOOP
+LFTWNG     MVC  POSNAME(10),=C'Left Wing '      PRINT LEFT WING
+           B    NAMESTRT                        BRANCH TO LOOP
+RTWING     MVC  POSNAME(10),=C'Right Wing'      PRINT RIGHT WING
+           B    NAMESTRT BRANCH TO LOOP
+*
+PLUSSIGN   DS   0H
+           MVI  0(1),C'+'    ADD PLUS SIGN
+           B    SIGNDONE     BRANCH TO LOOP
+NEGSIGN    DS   0H
+           MVI  0(1),C'-'    ADD NEG SIGN
+           B    SIGNDONE     BRANCH TO LOOP
+*******************************************
+*STORAGE FOR PRINT STARTS HERE
+*******************************************
+*
+           LTORG
+PRINTSV    DS    18F
+PRINTL     DC    C' '
+PLAYNUM    DS    CL4
+           DC    CL2' '
+PLYNAME    DS    CL25
+POSNAME    DS    CL10
+           DC    CL4' '
+GAMES      DS    CL4
+           DC    CL7' '
+GOALS      DS    CL4
+           DC    CL7' '
+ASSISTS    DS    CL4
+           DC    CL7' '
+POINTS     DS    CL4
+           DC    CL4' '
+SHOTS      DS    CL6
+           DC    CL5' '
+PERCENT    DS    CL11
+           DC    CL8' '
+PMRATE     DS    CL4
+ENDPRNTL   DS    0C
+TEMP       DS    PL8
+ADDTEMP    DS    PL2
+SIGNTEMP   DS    D
+*           
+HPLINE     DC    C' '
+           DC    C'  #     Player              '
+           DC    C'   Position      Games       Goals'
+           DC    C'    Assists     Points     Shots    '
+           DC    C'Shooting %   +/- Rating'
+EHPLINE    DS    0C
+PBLANK     DC    CL80' '
+PHDLINE    DC    C' '
+           DC    CL40' '
+           DC    C'Chicago Blackhawks Player Stats'
+PHDELINE   DS    0C
+************************************************
+*-------------------------------------------
+*NAME: SORT
+*
+*FUNCTION: SORT PLAYERS IN ORDER OF POINTS
+*
+*INPUT:    TABLE, AVAIL
+*
+*OUTPUT:   
+*
+*ENTRY CONDS: BALR 14,15
+*
+*REGISTER USAGE: R1:PARAMETERS
+*                R2:TABLE
+*                R3:AVAIL
+*                R12-R15: Linkage for external routine
+*
+*EXIT CONDS: BR  14
+*
+*
+************************************************  
+***************************************
+*Sort starts here
+***************************************
+SORT       CSECT               START SORT SUBROUTINE
+           STM   14,12,12(13)
+           LR    12,15
+           USING SORT,12
+           LA    14,SORTSV
+           ST    13,4(,14)
+           ST    14,8(,13)
+           LR    13,14
+           LM    2,3,0(1)
+*
+TSLOOP1    C     2,0(3)                   Compare i to EOT
+           BC    B'1000',ENDSORT          Branch to end
+           LA    5,0(2)                   Set Max Value to i
+           LA    4,39(2)                  Reset Value of j
+*
+TSLOOP2    ZAP   SRT1TEMP(2),30(2,5)
+           AP    SRT1TEMP(2),32(2,5)
+           ZAP   SRT2TEMP(2),30(2,4)
+           AP    SRT2TEMP(2),32(2,4)
+           CP    SRT1TEMP,SRT2TEMP        Compare max to j
+           BC    B'0010',INCJ             branch to inc j
+           LA    5,0(4)                   store new max
+*
+INCJ       LA    4,39(4)                  Increment Value of j
+           C     4,0(3)                   compare j to EOT
+           BC    B'0010',SWITCH
+*          BC    BSWITCH                   if EOT move max to i
+TELOOP2    B     TSLOOP2                  else branch to j loop
+*
+TELOOP1    LA    2,39(2)                  Increment Value of i
+           B     TSLOOP1                  branch to i loop
+*
+ENDSORT    L     13,4(,13)
+           LM    14,12,12(13)
+           BR    14
+SWITCH     MVC   SWITCHTM,0(2)            move current i to temp
+           MVC   0(39,2),0(5)             move max to i
+           MVC   0(39,5),SWITCHTM         move i to max prev address
+           B     TELOOP1
+***************************************
+*Storage for sort starts here
+***************************************
+           LTORG
+SORTSV     DS    18F
+SRT1TEMP   DS    PL2
+SRT2TEMP   DS    PL2
+SWITCHTM   DS    CL39
+***********************************************
+*-------------------------------------------
+*NAME: UPDATE
+*
+*FUNCTION: FORMAT AND PRINT CONTENTS OF TABLE
+*
+*INPUT:    TABLE, AVAIL,CARD
+*
+*OUTPUT:   
+*
+*ENTRY CONDS: BALR 14,15
+*
+*REGISTER USAGE: R1:PARAMETERS
+*                R2:TABLE
+*                R3:AVAIL
+*                R4:CARD
+*                R12-R15: Linkage for external routine
+*
+*EXIT CONDS: BR 14
+*
+*
+************************************************  
+***************************************
+*Update Starts Here
+***************************************
+UPDATE     CSECT               START BUILD SUBROUTINE
+           STM   14,12,12(13)
+           LR    12,15
+           USING UPDATE,12
+           LA    14,UPDATESV
+           ST    13,4(,14)
+           ST    14,8(,13)
+           LR    13,14
+           LM    2,4,0(1)
+           LA    6,TEMPTAB
+*
+           XPRNT BLANK,80
+           XPRNT UPHLINE,UPHELINE-UPHLINE
+           XPRNT DSHLINE,DSHELINE-DSHLINE
+           LR    7,2
+NEXTUP     XREAD 0(4),80         Read buffer line
+           BC    B'0100',DONEUP  if eof leave routine
+SRCHLPS    C     7,0(3)          else compare table to EOT
+           BC    B'1010',NOMSG           if EOT give not found
+           PACK  0(2,6),0(2,4)   pack player num
+           CP    0(2,7),0(2,6)   compare player num
+           BC    B'1000',EQUALUP if equal, begin update
+           LA    7,39(7)         else increment
+           B     SRCHLPS         branch to linear search
+*
+NOMSG      XPRNT NOLINE,ENOLINE-NOLINE print not found
+           LR    7,2
+           B     NEXTUP                branch to next
+*
+EQUALUP    XPRNT YESLINE,EYESLINE-YESLINE
+           PACK  28(2,6),3(2,4)  PACK UPDATE GAME NUMS 
+           PACK  30(2,6),6(2,4)  PACK UPDATE GOALS
+           PACK  32(2,6),9(2,4)  PACK UPDATE ASSISTS
+           PACK  34(3,6),12(3,4)  PACK UPDATE SHOTS
+           PACK  37(2,6),16(2,4)  PACK UP +/- RATING       
+           AP    28(2,7),28(2,6)  UPDATE GAMES
+           AP    30(2,7),30(2,6)  UPDATE GOALS
+           AP    32(2,7),32(2,6)  UPDATE ASSISTS
+           AP    34(3,7),34(3,6)  UPDATE SHOTS
+           AP    37(2,7),37(2,6)  UPDATE RATING
+           LR    7,2
+           B     NEXTUP           branch to next
+*
+DONEUP     XPRNT BLANK,80
+           L     13,4(,13)        
+           LM    14,12,12(13)
+           BR    14               leave subroutine
+***************************************
+*Storage for update starts here
+***************************************
+           LTORG 
+UPDATESV   DS    18F
+UPHLINE    DC    C' '
+           DC    C'Update Results'
+UPHELINE   DS    0C
+DSHLINE    DC    C' '
+           DC    C'--------------------'
+DSHELINE   DS    0C
+NOLINE     DC    C' '
+           DC    C'Player not found'
+ENOLINE    DS    0C
+YESLINE    DC    C' '
+           DC    C'Player found'
+EYESLINE   DS    0C
+TEMPTAB    DS    100F'-1'
+BLANK      DC    CL80' '
+***************************************
+           END   PROG7
+/*
+//FT05F001 DD DSN=KC02330.CSCI360.FILES(DATA7),DISP=SHR
+//

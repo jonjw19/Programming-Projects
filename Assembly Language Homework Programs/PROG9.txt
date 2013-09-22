@@ -1,0 +1,223 @@
+//KC03FEDA JOB ,'Name',MSGCLASS=H
+//STEP1 EXEC PGM=ASSIST
+//STEPLIB DD DSN=KC02293.ASSIST.LOADLIB,DISP=SHR
+//SYSPRINT DD SYSOUT=*
+//SYSIN DD *
+         TITLE 'CSCI 360 - Spring 2013 - Program 8'
+***********************************************************************
+* Name:           PGM9
+*
+* Function:  This program builds a table of scores for the various
+*            participants in the tiddlywinks tournament and prints it
+*            
+*
+* Input:     The input to the program is a file that contains the
+*            length of the names of the schools and teams, the actual
+*            names and the scores of each team
+*
+* Output:    The output from the program is one report. The report is
+*            is a list of the performance of the various schools 
+*            involved in the tiddlywinks tournament
+*
+* Entry Conds:  None
+*
+* Exit Conds:   None
+*
+* Register Usage: 1  -- address of the parameter list
+*                 14 -- return control
+*                 15 -- subroutine addresses
+*
+* Pseudocode:  1. Build the table
+*              2. Print the table
+*
+* Notes:   None
+***********************************************************************
+         EJECT
+*
+*
+PGM9     CSECT
+         STM   14,12,12(13)       Save the calling routine's register
+         LR    12,15              Setup the base register
+         USING PGM9,12              for the routine
+         LA    14,MAINSAVE        Find the routine's savearea
+         ST    13,4(,14)          Save the backward
+         ST    14,8(,13)            and forward pointers
+         LR    13,14
+*
+         LA    1,BPARMS           R1 -> parameter list
+         L     15,=V(BUILD)       Build the table
+         BALR  14,15
+*
+**********************************************************************
+*
+         LA    1,PPARMS           R1 -> parameter list
+         L     15,=V(PRINT)       Print the table
+         BALR  14,15
+*
+         L     13,4(,13)          Get the address of the savearea
+         LM    14,12,12(13)       Restore the calling routine's regs
+         BR    14                 I'm done!
+         LTORG
+*
+*** Storage for PGM8 ***
+*
+MAINSAVE DS    18F                Storage for registers
+BUFFER   DS    CL80               Input buffer
+PPARMS   DC    A(TABLE,EOT)           Parameter list for PRINTing and
+BPARMS   DC    A(EOT,BUFFER)        BUILDing the table
+*
+EOT      DC    A(TABLE)           Storage for logical end of table addr
+*
+         ORG   PGM9+((*-PGM9+31)/32*32)
+TABLE    DS    2304C              Storage for table
+ENDTAB   DS    0X                 End of table marker
+         EJECT
+***********************************************************************
+* Name:       BUILD
+*
+* Function:   Builds a table from input records
+*
+* Entry Cond: 0(1) - Address of logical end of the table
+*             4(1) - Address of the input buffer
+*
+* Logic:      1. Read the first record
+*             2. Do while there are more records
+*             3.   Get info from the input record and put in table
+*             4.   Increment table pointer to next element
+*             5.   Read the next record
+*             6. Enddo
+*             7. Save the logical end of table address
+*
+* Registers:  1  -- address of the parameter list
+*             4  -- address of logical end of the table
+*             5  -- address of the input buffer
+*             7  -- table pointer
+*             8  -- work register to move data to table
+*
+* Notes:      None
+***********************************************************************
+         EJECT
+BUILD    CSECT                   Build routine
+         STM   14,12,12(13)       Save the calling routine's register
+         LR    12,15              Setup the base register
+         USING BUILD,12             for the routine
+         LA    14,BLDSAVE         Find the routine's savearea
+         ST    13,4(,14)          Save the backward
+         ST    14,8(,13)            and forward pointers
+         LR    13,14
+*
+         LM    4,5,0(1)           Load the parameters
+*
+         L     11,0(,4)
+TBLOOP1  XREAD 0(,5),80
+         BC    B'0100',EBLOOP1
+         TRT   0(80,5),TRANTAB find colon
+         LR    6,1             Load Address of School
+         SR    1,5             Get length
+         BCTR  1,0             correct for offset
+         EX    1,MOVENAME      call mvc
+         TRT   1(80,6),TRANTAB  find colon
+         LR    7,1              Load team address
+         SR    1,6              Get length
+         BCTR  1,0              correct for offset
+         EX    1,MOVETEAM       call mvc
+         TRT   1(80,7),TRANTAB  find colon
+         LR    8,1              load first score
+         PACK  2(2,11),1(2,8)   pack score
+         TRT   1(80,8),TRANTAB  find colon
+         LR    9,1              load second score
+         PACK  4(2,11),1(2,9)   Pack second score
+         TRT   1(80,9),TRANTAB  find colon
+         LR    10,1             load third score
+         PACK  6(2,11),1(2,10)  pack third score
+         LA    11,8(,11)        increment
+         LA    11,0(6,11)       increment
+         LA    11,0(7,11)       increment
+         B     TBLOOP1          back to top
+*
+EBLOOP1  ST    11,0(,4)
+         L     13,4(,13)          Get the address of the savearea
+         LM    14,12,12(13)       Restore the calling routine's regs
+         BR    14                 I'm done!
+         LTORG
+*
+*** Storage for BUILD routine ***
+*
+BLDSAVE  DS    18F                Storage for registers
+NAMELEN  DS    F
+TEAMLEN  DS    F
+TRANTAB  DC    256X'00'
+         ORG   TRANTAB+C':'
+         DC    X'01'
+         ORG  
+MOVENAME MVC   8(0,11),0(6)
+MOVETEAM MVC   8(0,11),0(7)
+         EJECT
+***********************************************************************
+* Name:       PRINT
+*
+* Function:   Prints a table
+*
+* Entry Cond: 0(1) - Address of the table
+*             4(1) - Address of logical end of the table
+*
+* Logic:      1. Initialize counter to 0
+*             2. Do while there are table elements
+*             3.   Move information from table to print line
+*             4.   Increment total stock amount
+*             5.   Write the print line
+*             6.   Increment table pointer to next element
+*             7. Enddo
+*             8. Write total stock amount
+*
+* Registers:  1  -- address of the parameter list
+*             3  -- address of table beginning
+*             4  -- address of logical end of the table
+*             5  -- work register to move items from table to pline
+*             6  -- total number of cases in stock
+***********************************************************************
+         EJECT
+PRINT    CSECT ,                  Print routine
+         STM   14,12,12(13)       Save the calling routine's register
+         LR    12,15              Setup the base register
+         USING PRINT,12             for the routine
+         LA    14,PRNTSAVE        Find the routine's savearea
+         ST    13,4(,14)          Save the backward
+         ST    14,8(,13)            and forward pointers
+         LR    13,14
+*
+         LM    3,4,0(1)           Load the parameter list
+*
+         XPRNT TOPLINE,ETOPLINE-TOPLINE  Display header
+         XPRNT PBLANK,80                 display header
+         XPRNT HPLINE,EHPLINE-HPLINE     display header
+         XPRNT DASHS,DASHE-DASHS         display header
+*
+         L     13,4(,13)          Get the address of the savearea
+         LM    14,12,12(13)       Restore the calling routine's regs
+         BR    14                 I'm done!
+         LTORG
+*
+*** Storage for PRINT routine ***
+*
+PRNTSAVE DS    18F                Storage for initial register values
+TOPLINE  DC    C' '
+         DC    C'                Big 9 Conference '
+         DC    C'Tiddily-Winks Tournament'
+ETOPLINE DS    0C
+HPLINE   DC    C' '
+         DC    C'School                   '
+         DC    C'Team                    Game 1   '
+         DC    C'Game 2   Game 3'
+EHPLINE  DS    0C
+DASHS    DC    C' '
+         DC    73C'-'
+DASHE    DS    0C
+PBLANK   DC    CL80' '
+*
+         EJECT
+*
+         END   PGM9
+/*
+//FT05F001 DD DSN=KC02330.CSCI360.FILES(DATA9),DISP=SHR
+//
