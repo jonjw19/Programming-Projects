@@ -10,7 +10,7 @@ will get prettier when I'm more experienced.
 
 Just a little explanation of my current Directories:
 
-<h2>Aseembly Language Homework Programs</h2>
+<h2>Assembly Language Homework Programs</h2>
 
 These are my solutions to all the IBM assembly programs I had to write in my assembler class,
 some of the most and least fun I have while programming, but I suppose thats to be expected when
