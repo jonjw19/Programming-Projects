@@ -1,0 +1,41 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>@ViewBag.Title - jonwilsonprogrammer.com</title>
+        @RenderSection("meta", required: false)
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ 
+        <link href="~/Content/themes/default/bootstrap.css" rel="stylesheet">
+        
+ 
+        @Html.Partial("_html5shiv")
+ 
+        <!-- Fav and touch icons -->
+        <link rel="apple-touch-icon-precomposed" sizes="144x144" href="~/Content/ico/apple-touch-icon-144-precomposed.png">
+        <link rel="apple-touch-icon-precomposed" sizes="114x114" href="~/Content/ico/apple-touch-icon-114-precomposed.png">
+        <link rel="apple-touch-icon-precomposed" sizes="72x72" href="~/Content/ico/apple-touch-icon-72-precomposed.png">
+        <link rel="apple-touch-icon-precomposed" href="~/Content/ico/apple-touch-icon-57-precomposed.png">
+        <link href="~/Content/ico/favicon.ico" rel="shortcut icon" type="image/x-icon" />
+    </head>
+    <body bg-color="black">
+        @Html.Partial("_NavBar")
+        </br >
+        </br >
+ 
+        @RenderSection("featured", required: false)
+ 
+        <div class="container">
+            @RenderBody()
+            </br >
+            <hr />
+            <div class="footer">
+                <p class="text-center">&copy; Developed by Jonathan Wilson 2013</p>
+            </div>
+        </div>
+ 
+        @Scripts.Render("~/bundles/jquery")
+        @Scripts.Render("~/bundles/bootstrap")
+        @RenderSection("scripts", required: false)
+    </body>
+</html>
