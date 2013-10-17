@@ -45,6 +45,9 @@ then I screwed up and I would love for you to let me know. (jonjw19@gmail.com)
 4. Sometimes my solution was garbage and I have found a cooler way to solve a problem, if I do this
 there may be some version 2.0's or something, we will see.
 
+<h2> Websites </h2>
 
+At this moment only my resume website is in here, but I hope eventually it will be the home of other
+test projects as well.  Expect a database driven site soon.
 
 
